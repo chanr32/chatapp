@@ -11,7 +11,7 @@ import (
   "encoding/json"
 )
 
-var connections = make(map[string]User)
+var connections = make(map[string]*User)
 var serverVariables ServerVariable
 
 type ServerVariable struct {
@@ -88,7 +88,7 @@ func handleUsername(c net.Conn) {
     broadcast(username + " has entered.")
   }
 
-  connections[c.RemoteAddr().String()] = *user
+  connections[c.RemoteAddr().String()] = user
 
 }
 
