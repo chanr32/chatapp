@@ -1,7 +1,7 @@
 ## go chat app
 
 #### Extra Features
-- Read from config file, set default values if no config file found
+- Read from config file
 - Client can change username
 - Log messages to file
 
