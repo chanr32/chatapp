@@ -69,6 +69,10 @@ func handleConnection(c net.Conn) {
           var address = c.RemoteAddr().String()
           var username = connections[address].username
           text := strings.TrimSpace(string(netData))
+          if text == "" {
+            continue
+          }
+
           if text == "-exit" {
             broadcast(username + " has left.")
             break
@@ -88,6 +92,6 @@ func broadcast(msg string) {
   currentTime := time.Now()
 
   for _, user := range connections {
-    user.connection.Write([]byte(currentTime.Format("(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n"))
+    user.connection.Write([]byte(currentTime.Format("\n(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n\n"))
   }
 }
