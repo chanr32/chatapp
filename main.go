@@ -69,7 +69,7 @@ func main() {
     conn, err := ln.Accept()
     if err != nil {
       fmt.Println(err)
-      continue;
+      continue
     }
 
     go handleConnection(conn)
@@ -111,7 +111,7 @@ func handleConnection(c net.Conn) {
     netData, err := bufio.NewReader(c).ReadString('\n')
     if err != nil {
       fmt.Println(err)
-      continue;
+      break
     }
 
     var address = c.RemoteAddr().String()
@@ -149,11 +149,16 @@ func handleConnection(c net.Conn) {
 func broadcast(msg string) {
   currentTime := time.Now()
 
-  connections.RLock()
-  for _, user := range connections.m {
-    user.connection.Write([]byte(currentTime.Format("\n(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n\n"))
+  for address, user := range connections.m {
+    _, err := user.connection.Write([]byte(currentTime.Format("\n(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n\n"))
+    if err != nil {
+      fmt.Println("Could not write to " + address + ", connection dropped.")
+      fmt.Println("Removing " + address)
+      connections.Lock()
+      delete(connections.m, address)
+      connections.Unlock()
+    }
   }
-  connections.RUnlock()
 
   serverVariables.Logger.Println(msg)
 }
