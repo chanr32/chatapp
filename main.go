@@ -24,17 +24,25 @@ type User struct {
   connection net.Conn
 }
 
-func main() {
-  file, _ := os.Open("env.json")
-  defer file.Close()
+func setDefault() {
+  serverVariables.Ip = "localhost"
+  serverVariables.Port = "9000"
+  serverVariables.LogFile = "chat.log"
+}
 
-  decoder := json.NewDecoder(file)
-  err := decoder.Decode(&serverVariables)
+func main() {
+  file, err := os.Open("env.json")
+  defer file.Close()
   if err != nil {
-    // set to default
-    serverVariables.Ip = "localhost"
-    serverVariables.Port = "9000"
-    serverVariables.LogFile = "chat.log"
+    fmt.Println("Warn: config file does not exist, falling back to default")
+    setDefault()
+  } else {
+    decoder := json.NewDecoder(file)
+    err := decoder.Decode(&serverVariables)
+    if err != nil {
+      fmt.Println("Warn: failed decoding json file, falling back to default")
+      setDefault()
+    }
   }
 
   ln, err := net.Listen("tcp", serverVariables.Ip + ":" + serverVariables.Port)
