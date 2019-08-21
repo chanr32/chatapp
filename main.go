@@ -7,18 +7,21 @@ import (
   "bufio"
   "strings"
   "time"
+  "log"
   "encoding/json"
 )
 
 var connections = make(map[string]User)
+var serverVariables ServerVariable
+
+type ServerVariable struct {
+  Port, Ip, LogFile string
+  Logger *log.Logger
+}
 
 type User struct {
   username string
   connection net.Conn
-}
-
-type Configuration struct {
-    Port, Ip string
 }
 
 func main() {
@@ -26,19 +29,27 @@ func main() {
   defer file.Close()
 
   decoder := json.NewDecoder(file)
-  config := Configuration{}
-  err := decoder.Decode(&config)
+  err := decoder.Decode(&serverVariables)
   if err != nil {
     // set to default
-    config.Ip = "localhost"
-    config.Port = "9000"
+    serverVariables.Ip = "localhost"
+    serverVariables.Port = "9000"
+    serverVariables.LogFile = "chat.log"
   }
 
-  ln, err := net.Listen("tcp", config.Ip + ":" + config.Port)
+  ln, err := net.Listen("tcp", serverVariables.Ip + ":" + serverVariables.Port)
   if err != nil {
     panic(err)
   }
   defer ln.Close()
+
+  f, err := os.OpenFile(serverVariables.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+  if err != nil {
+  	log.Println(err)
+  }
+  defer f.Close()
+
+  serverVariables.Logger = log.New(f, "chat-app: ", log.LstdFlags)
 
   for {
     conn, err := ln.Accept()
@@ -112,4 +123,6 @@ func broadcast(msg string) {
   for _, user := range connections {
     user.connection.Write([]byte(currentTime.Format("\n(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n\n"))
   }
+
+  serverVariables.Logger.Println(msg)
 }
