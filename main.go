@@ -2,10 +2,12 @@ package main
 
 import (
   "fmt"
+  "os"
   "net"
   "bufio"
   "strings"
   "time"
+  "encoding/json"
 )
 
 var connections = make(map[string]User)
@@ -15,8 +17,24 @@ type User struct {
   connection net.Conn
 }
 
+type Configuration struct {
+    Port, Ip string
+}
+
 func main() {
-  ln, err := net.Listen("tcp", ":9000")
+  file, _ := os.Open("env.json")
+  defer file.Close()
+
+  decoder := json.NewDecoder(file)
+  config := Configuration{}
+  err := decoder.Decode(&config)
+  if err != nil {
+    // set to default
+    config.Ip = "localhost"
+    config.Port = "9000"
+  }
+
+  ln, err := net.Listen("tcp", config.Ip + ":" + config.Port)
   if err != nil {
     panic(err)
   }
