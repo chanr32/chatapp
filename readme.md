@@ -1,4 +1,4 @@
-## go chat app
+## go chat server
 
 #### Extra Features
 - Read from config file
