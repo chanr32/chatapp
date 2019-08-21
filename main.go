@@ -53,7 +53,8 @@ func main() {
 
   ln, err := net.Listen("tcp", serverVariables.Ip + ":" + serverVariables.Port)
   if err != nil {
-    panic(err)
+    fmt.Println(err)
+    return
   }
   defer ln.Close()
 
