@@ -9,10 +9,16 @@ import (
   "time"
   "log"
   "encoding/json"
+  "sync"
 )
 
-var connections = make(map[string]*User)
+var connections = Connections{m: make(map[string]*User)}
 var serverVariables ServerVariable
+
+type Connections struct {
+  m map[string]*User
+  sync.RWMutex
+}
 
 type ServerVariable struct {
   Port, Ip, LogFile string
@@ -82,14 +88,18 @@ func handleUsername(c net.Conn) {
   var user = new(User)
   user.username = username
   user.connection = c
-  if _, ok := connections[c.RemoteAddr().String()]; ok {
-    broadcast(connections[c.RemoteAddr().String()].username + " has changed their username to " + username)
+
+  connections.RLock()
+  if _, ok := connections.m[c.RemoteAddr().String()]; ok {
+    broadcast(connections.m[c.RemoteAddr().String()].username + " has changed their username to " + username)
   } else {
     broadcast(username + " has entered.")
   }
+  connections.RUnlock()
 
-  connections[c.RemoteAddr().String()] = user
-
+  connections.Lock()
+  connections.m[c.RemoteAddr().String()] = user
+  connections.Unlock()
 }
 
 func handleConnection(c net.Conn) {
@@ -105,7 +115,11 @@ func handleConnection(c net.Conn) {
     }
 
     var address = c.RemoteAddr().String()
-    var username = connections[address].username
+
+    connections.RLock()
+    var username = connections.m[address].username
+    connections.RUnlock()
+
     text := strings.TrimSpace(string(netData))
     if text == "" {
       continue
@@ -113,7 +127,11 @@ func handleConnection(c net.Conn) {
 
     if text == "-exit" {
       fmt.Printf("Removing %s\n", address)
-      delete(connections, address)
+
+      connections.Lock()
+      delete(connections.m, address)
+      connections.Unlock()
+
       broadcast(username + " has left.")
       break
     }
@@ -131,9 +149,11 @@ func handleConnection(c net.Conn) {
 func broadcast(msg string) {
   currentTime := time.Now()
 
-  for _, user := range connections {
+  connections.RLock()
+  for _, user := range connections.m {
     user.connection.Write([]byte(currentTime.Format("\n(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n\n"))
   }
+  connections.RUnlock()
 
   serverVariables.Logger.Println(msg)
 }
