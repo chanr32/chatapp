@@ -137,7 +137,7 @@ func handleConnection(c net.Conn) {
       break
     }
 
-    if text == "-changename" {
+    if text == "-cu" {
       handleUsername(c)
       continue
     }
