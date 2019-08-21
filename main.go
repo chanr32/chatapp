@@ -53,7 +53,7 @@ func main() {
 
   f, err := os.OpenFile(serverVariables.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
   if err != nil {
-  	log.Println(err)
+  	fmt.Println(err)
   }
   defer f.Close()
 
@@ -62,7 +62,8 @@ func main() {
   for {
     conn, err := ln.Accept()
     if err != nil {
-      panic(err)
+      fmt.Println(err)
+      continue;
     }
 
     go handleConnection(conn)
@@ -97,30 +98,30 @@ func handleConnection(c net.Conn) {
   handleUsername(c)
 
   for {
-          netData, err := bufio.NewReader(c).ReadString('\n')
-          if err != nil {
-            fmt.Println(err)
-            return
-          }
+    netData, err := bufio.NewReader(c).ReadString('\n')
+    if err != nil {
+      fmt.Println(err)
+      continue;
+    }
 
-          var address = c.RemoteAddr().String()
-          var username = connections[address].username
-          text := strings.TrimSpace(string(netData))
-          if text == "" {
-            continue
-          }
+    var address = c.RemoteAddr().String()
+    var username = connections[address].username
+    text := strings.TrimSpace(string(netData))
+    if text == "" {
+      continue
+    }
 
-          if text == "-exit" {
-            broadcast(username + " has left.")
-            break
-          }
+    if text == "-exit" {
+      broadcast(username + " has left.")
+      break
+    }
 
-          if text == "-changename" {
-            handleUsername(c)
-            continue
-          }
+    if text == "-changename" {
+      handleUsername(c)
+      continue
+    }
 
-          broadcast(username + ": " + text)
+    broadcast(username + ": " + text)
   }
   c.Close()
 }
