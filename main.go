@@ -112,6 +112,8 @@ func handleConnection(c net.Conn) {
     }
 
     if text == "-exit" {
+      fmt.Printf("Removing %s\n", address)
+      delete(connections, address)
       broadcast(username + " has left.")
       break
     }
