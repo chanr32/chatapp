@@ -5,6 +5,7 @@ import (
   "net"
   "bufio"
   "strings"
+  "time"
 )
 
 var connections = make(map[string]User)
@@ -67,24 +68,26 @@ func handleConnection(c net.Conn) {
 
           var address = c.RemoteAddr().String()
           var username = connections[address].username
-          temp := strings.TrimSpace(string(netData))
-          if temp == "-exit" {
+          text := strings.TrimSpace(string(netData))
+          if text == "-exit" {
             broadcast(username + " has left.")
             break
           }
 
-          if temp == "-changename" {
+          if text == "-changename" {
             handleUsername(c)
             continue
           }
 
-          broadcast(username + ": " + temp)
+          broadcast(username + ": " + text)
   }
   c.Close()
 }
 
 func broadcast(msg string) {
+  currentTime := time.Now()
+
   for _, user := range connections {
-    user.connection.Write([]byte(msg + "\n"))
+    user.connection.Write([]byte(currentTime.Format("(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n"))
   }
 }
