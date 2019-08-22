@@ -37,6 +37,7 @@ func setDefault() {
 }
 
 func main() {
+
   file, err := os.Open("env.json")
   defer file.Close()
   if err != nil {
@@ -161,5 +162,7 @@ func broadcast(msg string) {
     }
   }
 
-  serverVariables.Logger.Println(msg)
+  if os.Getenv("ENV") != "Test" {
+    serverVariables.Logger.Println(msg)
+  }
 }
