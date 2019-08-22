@@ -56,7 +56,7 @@ func TestUsernameChange(t *testing.T) {
 }
 
 func TestReadConfig(t *testing.T) {
-  data, err := ioutil.ReadFile("test-data/env.json")
+  data, err := ioutil.ReadFile("test-data/test.json")
   if err != nil {
     t.Fatal("Could not open file.")
   }
