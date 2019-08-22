@@ -12,6 +12,7 @@ import (
   "sync"
 )
 
+// Connected clients map
 var connections = Connections{m: make(map[string]*User)}
 var serverVariables ServerVariable
 
@@ -38,6 +39,7 @@ func setDefault() {
 
 func main() {
 
+  // Read config from file
   file, err := os.Open("env.json")
   defer file.Close()
   if err != nil {
@@ -52,6 +54,7 @@ func main() {
     }
   }
 
+  // Start TCP server
   ln, err := net.Listen("tcp", serverVariables.Ip + ":" + serverVariables.Port)
   if err != nil {
     fmt.Println(err)
@@ -59,6 +62,7 @@ func main() {
   }
   defer ln.Close()
 
+  // Open/Create Log file
   f, err := os.OpenFile(serverVariables.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
   if err != nil {
   	fmt.Println(err)
@@ -67,6 +71,7 @@ func main() {
 
   serverVariables.Logger = log.New(f, "chat-app: ", log.LstdFlags)
 
+  // Accept connections
   for {
     conn, err := ln.Accept()
     if err != nil {
@@ -86,11 +91,13 @@ func handleUsername(c net.Conn) {
     return
   }
 
+  // Set username to data from client
   username := strings.TrimSpace(string(netData))
   var user = new(User)
   user.username = username
   user.connection = c
 
+  // Broadcast user entered or changed username
   connections.RLock()
   if _, ok := connections.m[c.RemoteAddr().String()]; ok {
     broadcast(connections.m[c.RemoteAddr().String()].username + " has changed their username to " + username)
@@ -99,6 +106,7 @@ func handleUsername(c net.Conn) {
   }
   connections.RUnlock()
 
+  // Set user to connections map
   connections.Lock()
   connections.m[c.RemoteAddr().String()] = user
   connections.Unlock()
@@ -107,8 +115,10 @@ func handleUsername(c net.Conn) {
 func handleConnection(c net.Conn) {
   fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 
+  // Ask user for username
   handleUsername(c)
 
+  // Listen for data from client
   for {
     netData, err := bufio.NewReader(c).ReadString('\n')
     if err != nil {
@@ -123,10 +133,14 @@ func handleConnection(c net.Conn) {
     connections.RUnlock()
 
     text := strings.TrimSpace(string(netData))
+    // Continue if text is empty
     if text == "" {
       continue
     }
 
+    // Client request exit
+    // - Remove user from connections map
+    // - Close connection
     if text == "-exit" {
       fmt.Printf("Removing %s\n", address)
 
@@ -138,11 +152,13 @@ func handleConnection(c net.Conn) {
       break
     }
 
+    // Client request username change
     if text == "-cu" {
       handleUsername(c)
       continue
     }
 
+    // Broadcast message
     broadcast(username + ": " + text)
   }
   c.Close()
@@ -151,8 +167,11 @@ func handleConnection(c net.Conn) {
 func broadcast(msg string) {
   currentTime := time.Now()
 
+  // Write to each user connected
   for address, user := range connections.m {
     _, err := user.connection.Write([]byte(currentTime.Format("\n(Mon, Jan 2 2006 - 15:04pm)") + " " + msg + "\n\n"))
+    // Could not write to client
+    // Assuming connection dropped, remove user from connections map
     if err != nil {
       fmt.Println("Could not write to " + address + ", connection dropped.")
       fmt.Println("Removing " + address)
@@ -162,6 +181,7 @@ func broadcast(msg string) {
     }
   }
 
+  // Skip writing to log when running tests
   if os.Getenv("ENV") != "Test" {
     serverVariables.Logger.Println(msg)
   }
