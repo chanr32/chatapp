@@ -93,9 +93,25 @@ func (s *Server) handleUsername(conn net.Conn) {
   user.username = username
   user.connection = conn
 
+  var entering bool
+  var oldUsername string
+
   // Set user to connections map
   address := conn.RemoteAddr().String()
+  if s.Connections.m[address] != nil {
+    oldUsername = s.Connections.m[address].username
+    entering = false
+  } else {
+    entering = true
+  }
+
   s.addConnection(address, user)
+
+  if entering {
+    s.broadcast(user.username + " has entered.")
+  } else {
+    s.broadcast(oldUsername + " changed username to " + user.username)
+  }
 }
 
 func (s *Server) writeToClient(conn net.Conn, msg string) {
@@ -135,8 +151,6 @@ func (s *Server) addConnection(address string, user *User) {
   s.Connections.Lock()
   s.Connections.m[address] = user
   s.Connections.Unlock()
-
-  s.broadcast(user.username + " has entered.")
 }
 
 func (s *Server) removeConnection(address string) {
