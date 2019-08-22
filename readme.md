@@ -7,7 +7,7 @@
 
 #### How to use
 ```
-go run main.go
+go run .
 ```
 
 Clients dialing in will first be prompted to enter their desired username. Clients are able to change their username by sending command **-cu**. Disconnect by sending **-exit**.
