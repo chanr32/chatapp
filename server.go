@@ -80,7 +80,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 
   s.handleUsername(conn)
 
-  s.listenForMessages(conn)
+  go s.listenForMessages(conn)
 }
 
 func (s *Server) handleUsername(conn net.Conn) {
